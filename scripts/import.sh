@@ -7,4 +7,4 @@ if [ -f /data/build2neo/neo4j-admin-import-call.sh ]; then
 fi
 neo4j start
 sleep 10
-neo4j stop
+# neo4j stop
