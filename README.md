@@ -1,7 +1,10 @@
-# Open Targets BioCypher KG
+# Open Targets BioCypher Knowledge Graph (KG)
 
 This the [BioCypher](https://biocypher.org) prototype for adapting Open Targets
 platform data. It is a work in progress.
+
+## KG Data Model
+![Open Targets Knowledge Graph Data Model](data/img/kg_ot_datamodel_graphviz.svg)
 
 ## Installation
 
