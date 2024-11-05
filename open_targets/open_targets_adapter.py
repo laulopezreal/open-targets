@@ -1,7 +1,6 @@
 from typing import Optional
 from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession, DataFrame, functions as F
-from enum import Enum
 from bioregistry.resolve import normalize_curie
 from biocypher._logger import logger
 from tqdm import tqdm
