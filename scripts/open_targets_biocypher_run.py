@@ -13,6 +13,9 @@ from biocypher import BioCypher
 
 from open_targets.open_targets_adapter import (
     TargetDiseaseEvidenceAdapter,
+)
+
+from open_targets.models.kg_models import (
     TargetDiseaseDataset,
     TargetNodeField,
     DiseaseNodeField,
