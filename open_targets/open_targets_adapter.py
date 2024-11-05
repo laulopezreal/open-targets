@@ -360,14 +360,6 @@ class TargetDiseaseEvidenceAdapter:
         """
         Yield edges from the evidence dataframe per batch.
         """
-
-        # Check if self.evidence_df has column partition_num
-        if "partition_num" not in self.target_df.columns:
-            raise ValueError(
-                "df does not have column partition_num. "
-                "Please run get_edge_batches() first."
-            )
-
         logger.info("Generating Gene -> GO edges.")
 
         logger.info(
@@ -439,14 +431,6 @@ class TargetDiseaseEvidenceAdapter:
         Args:
             batch_number: The number of the current batch.
         """
-
-        # Check if self.evidence_df has column partition_num
-        if "partition_num" not in self.evidence_df.columns:
-            raise ValueError(
-                "df does not have column partition_num. "
-                "Please run get_edge_batches() first."
-            )
-
         logger.info("Generating edges.")
 
         logger.info(
