@@ -99,6 +99,7 @@ class TargetDiseaseEvidenceAdapter:
         self.target_go_edge_fields = target_go_edge_fields
         self.test_mode = test_mode
         self.current_batches = list()
+        self.current_df = None
 
         if not self.datasets:
             raise ValueError("datasets must be provided")
@@ -228,13 +229,12 @@ class TargetDiseaseEvidenceAdapter:
         """
         Utility function to get all datasources in the evidence data.
         """
-
         # collect all distinct datasourceId values
         datasources = self.evidence_df.select("datasourceId").distinct().collect()
 
         # convert to list
         self.datasources = [x.datasourceId for x in datasources]
-        print(self.datasources)
+        logger.info(f"Data sources are {self.datasources}")
 
     def _yield_node_type(
         self,
@@ -326,17 +326,13 @@ class TargetDiseaseEvidenceAdapter:
             mouse_target_df, MouseTargetNodeField, "ensembl"
         )
 
-    def get_edge_batches(self, df: DataFrame) -> DataFrame:
+    def add_partition_num_col(self, df: DataFrame) -> DataFrame:
         """
         Adds partition number to the evidence dataframe and returns the data
         frame.
-
         Args:
-
             df: The evidence dataframe.
-
         Returns:
-
             The evidence dataframe with a new column "partition_num" containing
             the partition number.
         """
@@ -356,27 +352,24 @@ class TargetDiseaseEvidenceAdapter:
 
         return df
 
-    def get_gene_go_edges(self, batch_number: int):
+    def get_df_batch(self, df, batch_number: int, ):
         """
         Yield edges from the evidence dataframe per batch.
         """
-        logger.info("Generating Gene -> GO edges.")
-
         logger.info(
             f"Processing batch {batch_number+1} of {len(self.current_batches)}."
         )
 
-        yield from self._process_gene_go_edges(
-            self.target_df.where(self.target_df.partition_num == batch_number)
-        )
+        return df.where(df.partition_num == batch_number)
 
-    def _process_gene_go_edges(self, batch: DataFrame):
+    def process_gene_go_edges_batch(self, batch_number: DataFrame):
         """
         Process one batch of Gene -> GO edges.
-
         Args:
             batch: Spark DataFrame containing the edges of one batch.
         """
+        logger.info("Processing Gene -> GO edges from targets dataframe.")
+        batch = self.get_df_batch(self.target_df, batch_number)
         logger.info(f"Batch size: {batch.count()} edges.")
 
         if self.test_mode:
@@ -424,32 +417,14 @@ class TargetDiseaseEvidenceAdapter:
                 properties,
             )
 
-    def get_gene_disease_edges(self, batch_number: int):
+    def process_gene_disease_edges_batch(self, batch_number: int):
         """
-        Yield edges from the evidence dataframe per batch.
-
+        Process one batch of Gene -> Disease edges.
         Args:
-            batch_number: The number of the current batch.
-        """
-        logger.info("Generating edges.")
-
-        logger.info(
-            f"Processing batch {batch_number+1} of {len(self.current_batches)}."
-        )
-
-        yield from self._process_gene_disease_edges(
-            self.evidence_df.where(self.evidence_df.partition_num == batch_number)
-        )
-
-    def _process_gene_disease_edges(self, batch):
-        """
-        Process one batch of edges.
-
-        Args:
-
             batch: Spark DataFrame containing the edges of one batch.
         """
-
+        logger.info("Processing Gene -> GO edges from Evidence dataframe.")
+        batch = self.get_df_batch(self.evidence_df, batch_number)
         logger.info(f"Batch size: {batch.count()} edges.")
 
         if self.test_mode:
@@ -491,19 +466,15 @@ class TargetDiseaseEvidenceAdapter:
 
 
 @functools.lru_cache()
-def _process_id_and_type(inputId: str, _type: Optional[str] = None):
+def _process_id_and_type(inputId: Optional[str], _type: Optional[str] = None):
     """
-    Process diseaseId and diseaseType fields from evidence data. Process
-    gene (ENSG) ids.
-
+    Process ids and types from a dataset.
     Args:
-
         inputId: id of the node.
-
         _type: type of the node.
     """
-
     if not inputId:
+        logger.debug("No id provided.")
         return (None, None)
 
     _id = None
@@ -536,9 +507,7 @@ def _process_id_and_type(inputId: str, _type: Optional[str] = None):
 def _find_licence(source: str) -> str:
     """
     Find and return the licence for a source.
-
     Args:
-
         source: source of the evidence. Spelling as in the Open Targets
         evidence data.
     """

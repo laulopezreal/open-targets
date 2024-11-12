@@ -1,16 +1,5 @@
 from biocypher import BioCypher
 
-# VSCode does not add the root directory to the path (by default?). Not sure why
-# this works sometimes and not others. This is a workaround.
-
-# TODO: Delete lines 3,4, 10 and 13. By adding line 6 in pyptoject.toml, and installing the project using 
-# `poetry install`, the root directory is added to the path, 
-# so this workaround is not needed anymore.
-
-# import sys
-
-# sys.path.append("")
-
 from open_targets.open_targets_adapter import (
     TargetDiseaseEvidenceAdapter,
 )
@@ -172,26 +161,45 @@ def main():
 
     # Write OTAR edges in batches to avoid memory issues
     # Gene - Disease
-    target_disease_adapter.evidence_df = target_disease_adapter.get_edge_batches(
-        target_disease_adapter.evidence_df
+    # target_disease_adapter.evidence_df = target_disease_adapter.get_edge_batches(
+    #     target_disease_adapter.evidence_df
+    # )
+    # for batch in target_disease_adapter.current_batches:
+    #     bc.write_edges(
+    #         target_disease_adapter.process_gene_disease_edges_batch(batch_number=batch)
+    #     )
+    write_edges_in_batches(
+        target_disease_adapter.evidence_df,
+        target_disease_adapter,
+        bc,
+        target_disease_adapter.process_gene_disease_edges_batch,
     )
-    for batch in target_disease_adapter.current_batches:
-        bc.write_edges(
-            target_disease_adapter.get_gene_disease_edges(batch_number=batch)
-        )
 
     # Gene-GO: These edges are derived from the targets parquet file
     # Write Gene -> GO edges in batches to avoid memory issues
-    target_disease_adapter.target_df = target_disease_adapter.get_edge_batches(
+    # target_disease_adapter.target_df = target_disease_adapter.get_edge_batches(
+    #     target_disease_adapter.target_df,
+    # )
+    # for batch in target_disease_adapter.current_batches:
+    #     bc.write_edges(target_disease_adapter.process_gene_go_edges_batch(batch_number=batch))
+    write_edges_in_batches(
         target_disease_adapter.target_df,
+        target_disease_adapter,
+        bc,
+        target_disease_adapter.process_gene_go_edges_batch,
     )
-    for batch in target_disease_adapter.current_batches:
-        bc.write_edges(target_disease_adapter.get_gene_go_edges(batch_number=batch))
 
     # Post import functions
     bc.write_import_call()
     bc.summary()
 
+def write_edges_in_batches(df, adapter, bc, edge_function):
+    """
+    Write edges in batches to avoid memory issues.
+    """
+    adapter.current_df = adapter.add_partition_num_col(df)
+    for batch in adapter.current_batches:
+        bc.write_edges(edge_function(batch_number=batch))
 
 if __name__ == "__main__":
     main()
